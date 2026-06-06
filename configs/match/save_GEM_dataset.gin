@@ -1,0 +1,80 @@
+# condor/run.py configs/match/save_GEM_dataset.gin
+# condor/submit.py configs/match/save_GEM_dataset.gin 25
+
+include 'assets/pretrained_models/match/uv_res_512/config_0.gin'
+MODEL_PATH = 'assets/pretrained_models/match/uv_res_512'
+CKPT = 780_000
+N_GPUS = 1
+AVA_ROOT = 'data/ava-256'
+AVA_UV_DIR = "data/tempeh_predictions/ava-256/GEM/ava-256"
+AVA_STAGE1_DIR = %AVA_UV_DIR
+AVA_FRAME_STRIDE = 1
+AVA_SAPIENS_SEG_DIR = 'data/sapiens_segmentations/ava-256/framestride_1/sapiens_1b'
+
+
+condor_name/join_strings.strings = ['.save_GEM_dataset-', %NAME, '-', %CKPT]
+cmd/join_strings.strings = ['torchrun --standalone --nnodes=1 --nproc-per-node=', %N_GPUS, ' scripts/match/save_GEM_dataset.py --gin_configs __CONFIG__']
+
+save_GEM_dataset:
+  out_dir = 'experiments/match/GEM_datasets'
+
+Options:
+  load_pretrained_model = %MODEL_PATH
+  load_pretrained_model_ckpt = %CKPT
+
+  val_loader_params = [
+    {
+      'name': 'ava_val',
+      'cls': 'ava256',
+      'kwargs': {
+        'dataloader_kwargs': {
+          "batch_size": %BATCH_SIZE,
+          'persistent_workers': True,
+          'num_workers': 8,
+        }, 
+        'dataset_kwargs': {
+          "root_path": %AVA_ROOT,
+          'height': %AVA_HEIGHT,
+          'width': %AVA_WIDTH,
+          "camera_angles":  %AVA_CAMERA_ANGLES,
+          'uv_directory': %AVA_UV_DIR,
+          'coarse_mesh_directory': %AVA_STAGE1_DIR,
+          'frame_stride': %AVA_FRAME_STRIDE,
+          'max_captures': %AVA_MAX_CAPTURES,
+          'head_crop': %HEAD_CROP,
+          'head_crop_height': %HEAD_CROP_HEIGHT,
+          'head_crop_width': %HEAD_CROP_WIDTH,
+          'head_crop_offset_y': %HEAD_CROP_OFFSET_Y,
+          'sapiens_segmentation_directory': %AVA_SAPIENS_SEG_DIR,
+          'deterministic_shuffle': False,
+          'extra_camera_angles': None,
+          'training': None,
+          'require_segmentation': False,
+          'require_verts': False,
+          'only_subjects': [    
+            "APP152",
+            "PGO261",
+            # "INQ807", 
+            # "BGR645", 
+            # "KWL586",             
+            # "PDG961",
+            # "LCJ763",
+            # "UHV563",
+            # "PGO261",
+            # "IBQ026", 
+            # "APP152",
+            # "YJF815",
+            # "PSV686",
+            # "TCE049"
+            ],
+        }
+      }
+    },
+  ]   
+
+CondorParameters:
+  njobs = 1
+  name = @condor_name/join_strings()
+  batch_name = @condor_name/join_strings()
+  cmd = @cmd/join_strings()
+  requirements = '(TARGET.CUDACapability >= 7.0) && (UtsnameNodename =!= "g153")'

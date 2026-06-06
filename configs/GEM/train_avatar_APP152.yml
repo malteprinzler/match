@@ -1,0 +1,126 @@
+# condor/run.py configs/GEM/train_avatar_APP152.yml
+# condor/submit.py 25 configs/GEM/train_avatar_APP152.yml
+
+script: scripts/GEM/train_avatar.py
+
+subject: APP152
+cross_subject: PGO261
+capture_id: 'UNION_GEM_${subject}'
+data_dir: experiments/match/GEM_datasets/${subject}/${capture_id}
+dataset_name: NERSEMBLE
+regressor: DECA
+ds_rate: 1
+width: 512
+height: 640
+
+data:
+  image: ${data_dir}/images
+  mask: ${data_dir}/fg_masks
+  mesh: ${data_dir}/tracked_mesh
+  test_camera: "00"
+  identity_frame: "00000_00"
+  join_configs: true
+  camera_list: ["00", "01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11"]
+  use_sampler: false
+  load_pretrained_face_features: True
+  flame_fit_path: 'experiments/GEM/flame_fits/FINAL_flame_fits/${capture_id}'
+
+
+data_cross_config: 'configs/GEM/cross_eval_${cross_subject}.yml'
+
+### TRAIN CONFIG
+
+train:
+  tag: avatars
+  exp_name: FINAL_regressor_pcacomponents150
+  # resume_path: /is/cluster/mprinzler/projects/gintern/GEM/experiments/train_regressor_fast/UNION_INQ807_TEETHFOCUS/bs30_adjusted_lrs/checkpoints/chkpnt020000.pth
+  pca_dir: experiments/GEM/pca_gauss/FINAL_pca_ncomponents150/${capture_id}
+  disable_dynamic_mouth_opacities: True
+  disable_dynamic_mouth_scales: True
+  disable_dynamic_mouth_colors: True
+  neutral_frame_mean_init_iteration: 0
+  mean_init_iteration: 15_000
+  basis_init_iteration: 30_000
+  iterations: 40_001
+  optimizable_codes: false
+  orthogonalize_basis: false
+  optimizable_means: true
+  learning_rates:
+    pca_basis: 1.5e-7
+    pca_mean: 1.5e-5
+    RT: 1.5e-4
+    coeff_residuals: 1.5e-3
+    regressor: 1e-3
+    mean_init: 1.5e-4
+
+
+  run_dir: experiments/GEM/${.tag}/${.exp_name}/${capture_id}
+  ckpt_dir: ${.run_dir}/checkpoints
+  canonical_mesh: ${.run_dir}/canonical.ply
+  tb_dir: ${.run_dir}/tb
+  progress_dir: ${.run_dir}/progress
+  results_dir: ${.run_dir}/results
+  dynamic_colors: True
+  use_gtempeh_predictions: True
+  pca_all: True
+  twoDgs: True
+  trainer: regressor
+  regressor_model: MLP
+  d_bottleneck_vae: 64
+  use_parts: false
+  # See gem/masks/flame for available masks
+  test_disable_regions: ["hair"]
+
+  loss_weights: 
+    w_static_mouth_color: 0.
+    w_reg_mean_init_neutral_frame: 1.
+    w_reg_mean_init: 0.
+    w_vgg: 0.03
+    w_kl: 0 # 1.0e-3
+    w_basis_reg: 0
+
+  use_pretrained_deca: true
+  use_data_augmentation: true
+  bg_color: "white"
+  uv_size: 512
+  batch_size: 30
+  shuffle: True
+  num_workers: 15
+  log_progress_n_steps: 500
+  log_n_steps: 50
+  checkpoint_n_steps: 5_000
+  eval_n_steps: 5_000
+  eval_n_samples: 20
+  eval_n_vis: 5
+  make_videos: True
+
+  # Regressor settings
+  use_expr: false
+  use_deca_relative: false
+  use_emoca_relative: false
+  use_both_relative: true
+  use_absolute: false
+
+  optimizer:
+    class_name: torch.optim.AdamW
+
+  lr_scheduler:
+    class_name: torch.optim.lr_scheduler.MultiStepLR
+    milestones: [2_000, 4_000, 6_000]
+    gamma: 0.33
+
+CondorParameters:
+  njobs: 1
+  name: ${train.exp_name}_${capture_id}
+  batch_name: ${train.exp_name}_${capture_id}
+  cmd: 'python ${script} __CONFIG__'
+  requirements: '(TARGET.CUDACapability >= 7.0)'
+  base_dir: ${train.run_dir}
+  request_gpus: 0
+  request_cpus: 1
+  request_memory: 10_000
+  request_disk: 50G
+  backup_root: '/home/mprinzler/.codebackups/GEM'
+  backup_excludepatterns: ['third_party']
+  environment: {'CC': 'gcc-11', 'CXX':'g++-11'}
+  retries: 0

@@ -1,0 +1,27 @@
+# condor/run.py configs/train_coarse2.yaml
+# condor/submit.py 25 configs/train_coarse2.yaml
+condor:
+  jobname: tempeh_ava256_scale08_wedgeface10_redo_second
+  submit:
+    executable: "condor/tempeh.sh"
+    arguments: "python trainer/train_global.py \
+                  --config-filename /is/cluster/mprinzler/projects/gintern/TEMPEH/runs/coarse/coarse__tempeh_ava256_scale08_wedgeface10_redo_second__January12__13-41-40/config.json \
+                  --num-iterations 800000 \
+                  --weight-points2surface 10.0 \
+                  --weight-edge-regularizer 1.0 \
+                  --weight-points-recon 0.0
+                "
+    description: "tempeh_${..jobname}"
+    request_gpus: 1
+    request_cpus: 16
+    request_memory: 64000
+    request_disk: "50G"
+    requirements: '(TARGET.CUDADeviceName=="NVIDIA A100-SXM4-40GB") || (TARGET.CUDADeviceName=="NVIDIA A100-SXM4-80GB")'
+    log_root: "logs/coarse/${..jobname}/$(ClusterId).$(Process)"
+    error: "$(log_root).out"
+    output: "$(log_root).out"
+    log: "$(log_root).log"
+    environment: "\"CONDOR_ClusterId=$(ClusterId) CONDOR_Process=$(Process) CONDOR_WorldSize=${.njobs} CONDOR_LOGFILE=$(log) CONDOR_OUTFILE=$(out) NUMEXPR_MAX_THREADS=128\""
+    njobs: 1
+  code_backup_root: /is/cluster/mprinzler/.codebackups/TEMPEH
+

@@ -1,0 +1,16 @@
+*.egg-info
+/build
+__pycache__/
+screenshots/
+demos
+/experiments
+/example_data
+/assets
+logs
+/data
+*.code-workspace
+*/*checkpoint.ipynb
+*checkpoint.ipynb
+scratch.py
+.vscode/
+zips

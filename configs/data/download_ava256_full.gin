@@ -1,0 +1,22 @@
+# condor/run.py configs/data/download_ava256_full.gin
+
+NAME = "download_ava256_full"
+OUT_DIR = 'data/ava-256'
+ID_FILE = 'assets/ava256/256_ids.csv'
+
+cmd/join_strings.strings = [
+  'python scripts/data/download_ava256.py',
+  ' --output-dir "', %OUT_DIR, '"',
+  ' --captures-file "', %ID_FILE, '"',
+  ' --assets foreground_masks camera_calibration frame_list head_pose image kinematic_tracking',
+  ' -j 8',
+  ' -s 4TB',
+]
+
+CondorParameters:
+  name = %NAME
+  batch_name = %NAME
+  base_dir = %OUT_DIR
+  cmd = @cmd/join_strings()
+  backup_root = None
+  backup_excludepatterns = ['third_party']

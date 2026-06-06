@@ -1,0 +1,26 @@
+# condor/run.py configs/data/download_ava256_quickstart.gin
+
+NAME = "download_ava256_quickstart"
+OUT_DIR = 'data/ava-256'
+ID_FILE = 'assets/ava256/1_id.csv'
+# Optional: list of camera IDs to download for multi-camera assets (image, foreground_masks, etc.).
+# Leave empty to download all cameras. Example: '401875 401919 402020 402012 401920 401965 401630 401916 401860 402038 401966 401969'
+CAMERAS = '401875 401919 402020 402012 401920 401965 401630 401916 401860 402038 401966 401969'
+
+cmd/join_strings.strings = [
+  'python scripts/data/download_ava256.py',
+  ' --output-dir "', %OUT_DIR, '"',
+  ' --captures-file "', %ID_FILE, '"',
+  ' --assets foreground_masks camera_calibration frame_list head_pose image',
+  ' -j 8',
+  ' -s 4TB',
+  ' --cameras ', %CAMERAS
+]
+
+CondorParameters:
+  name = %NAME
+  batch_name = %NAME
+  base_dir = %OUT_DIR
+  cmd = @cmd/join_strings()
+  backup_root = None
+  backup_excludepatterns = ['third_party']

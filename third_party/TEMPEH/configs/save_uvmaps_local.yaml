@@ -1,0 +1,26 @@
+# condor/run.py configs/save_uvmaps_local.yaml
+# condor/submit.py 25 configs/save_uvmaps_local.yaml 
+condor:
+  jobname: save_uvmaps-refinement__tempeh_fine_ava256_scale08_wedgeface10__September11__01-52-50
+  submit:
+    executable: "condor/tempeh.sh"
+    arguments: "python trainer/save_uvmaps_local.py \
+      --config-filename /home/mprinzler/projects/gintern/TEMPEH/runs/refinement/refinement__tempeh_fine_ava256_scale08_wedgeface10__September11__01-52-50/config.json \
+      --outpath /fast/mprinzler/gintern/datasets/ava-256_uvpredictions/TEMPEH_ORIGINAL/coarse__tempeh_ava256_scale08_wedgeface10__September01__14-23-23_uvmaps_full \
+      --uv-out-height 786 \
+      --uv-out-width 512
+                "
+    description: "tempeh_${..jobname}"
+    request_gpus: 1
+    request_cpus: 16
+    request_memory: 64000
+    request_disk: "50G"
+    requirements: '((TARGET.CUDADeviceName=="NVIDIA A100-SXM4-40GB") || (TARGET.CUDADeviceName=="NVIDIA A100-SXM4-80GB")) && ((UtsnameNodename =!= "g153"))'
+    log_root: "logs/fine/${..jobname}/$(ClusterId).$(Process)"
+    error: "$(log_root).out"
+    output: "$(log_root).out"
+    log: "$(log_root).log"
+    environment: "\"CONDOR_ClusterId=$(ClusterId) CONDOR_Process=$(Process) CONDOR_WORLD_SIZE=${.njobs} CONDOR_LOGFILE=$(log) CONDOR_OUTFILE=$(out) NUMEXPR_MAX_THREADS=128\""
+    njobs: 20
+  code_backup_root: /is/cluster/mprinzler/.codebackups/TEMPEH
+

@@ -1,0 +1,37 @@
+# condor/run.py configs/tempeh/save_predictions_quickstart.yml
+# condor/submit.py configs/tempeh/save_predictions_quickstart.yml 25
+
+
+name: save_predictions-quickstart
+data_dir: data/ava-256
+out_dir: data/tempeh_predictions/ava-256/quickstart
+script: scripts/tempeh/save_predictions.py
+tempeh_config: assets/pretrained_models/tempeh/config.json
+arguments: "--config-filename ${tempeh_config} \
+            --dataset-directory ${data_dir} \
+            --camera-angles '[[0,0], [0, -15], [20,0], [20, 36], [20, -15], [-20,0], [-20, 36], [-20, -15], [40,-5], [40, 25], [-40,-5], [-40, 25]]' \
+            --height 256 \
+            --width 167 \
+            --frame-stride 10 \
+            --max-captures -1 \
+            --outpath ${out_dir} \
+            --uv-out-height 786 \
+            --uv-out-width 512 \
+            --uv-n-samples 1"  # Number of samples to predict for
+
+
+# condor configs
+CondorParameters:
+  name: ${name}
+  batch_name: ${name}
+  cmd: 'python ${script} ${arguments}'
+  requirements: '(TARGET.CUDACapability >= 8.0)'
+  base_dir: ${out_dir}
+  request_gpus: 1
+  request_cpus: 16
+  request_memory: 64_000
+  request_disk: 50G
+  backup_excludepatterns: ['third_party']
+  environment: {'CC': 'gcc-11', 'CXX':'g++-11'}
+  njobs: 20
+  retries: 0

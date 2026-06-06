@@ -1,0 +1,18 @@
+executable = scripts/train_one_subject.sh
+request_gpus = 1
+request_cpus = 16
+request_memory = 64000
+request_disk = 100G
+# use template : FullNode
+log = .gpu_interactive.log
+# requirements = (TARGET.CUDACapability >= 7.0) && (UtsnameNodename =!= "g109")
+# requirements = (TARGET.CUDACapability >= 7.0) && (TARGET.CUDADeviceName=="Quadro RTX 6000")  && (UtsnameNodename =!= "g109")
+# requirements = (TARGET.CUDACapability >= 7.0) && (TARGET.CUDAGlobalMemoryMb >=60000)
+requirements = (TARGET.CUDACapability >= 7.0) && (TARGET.CUDADeviceName=="NVIDIA A100-SXM4-80GB") || (TARGET.CUDADeviceName=="NVIDIA A100-SXM4-40GB")
+# requirements = (TARGET.CUDACapability >= 7.0) && (TARGET.CUDAGlobalMemoryMb >=40000)
+# requirements = (TARGET.CUDACapability >= 7.0) && (TARGET.CUDADeviceName=="NVIDIA H100 80GB HBM3")
+# requirements = UtsnameNodename == "g102"
+# requirements = (TARGET.CUDACapability >= 7.0) && (TARGET.CUDAGlobalMemoryMb >=40000) && && (TARGET.CUDADeviceName=="NVIDIA A100-SXM4-40GB") && (TARGET.CUDADeviceName=="NVIDIA H100 80GB HBM3")
+# requirements = TARGET.CUDADeviceName=="Tesla V100-SXM2-32GB"
+environment = "CONDOR_ClusterId=$(ClusterId) CONDOR_Process=$(Process)"
+queue

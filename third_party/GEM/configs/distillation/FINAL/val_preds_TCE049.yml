@@ -1,0 +1,130 @@
+# condor/run.py configs/distillation/FINAL/val_preds_TCE049.yml
+# condor/submit.py 25 configs/distillation/FINAL/val_preds_TCE049.yml
+
+script: test.py
+
+subject: TCE049
+cross_subject: UHV563
+capture_id: 'UNION_FINAL_${subject}'
+actor_id: /is/cluster/mprinzler/gtempeh/experiments/gtempeh/distillation_datasets/finalava_uvres512_sapiens1b_mixed_780k_tracked_FLAME2020/${subject}/${capture_id}
+dataset_name: NERSEMBLE
+regressor: DECA
+ds_rate: 1
+width: 512
+height: 640
+
+data:
+  image: ${actor_id}/images
+  mask: ${actor_id}/fg_masks
+  mesh: ${actor_id}/tracked_mesh
+  test_camera: "00"
+  identity_frame: "00000_00"
+  join_configs: true
+  camera_list: ["00", "01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11"]
+  use_sampler: false
+  load_pretrained_face_features: True
+  flame_fit_path: '/is/cluster/mprinzler/projects/gintern/GEM/experiments/flame_fits/${capture_id}/FINAL_flame_fits'
+
+data_cross_config: /home/mprinzler/projects/gintern/GEM/configs/distillation/FINAL/regressor_${cross_subject}.yml
+
+### TRAIN CONFIG
+
+train:
+  tag: train_regressor_FINAL
+  exp_name: FINAL_regressor_pcacomponents150
+  resume_path: /home/mprinzler/projects/gintern/GEM/experiments/train_regressor_FINAL/${capture_id}/FINAL_regressor_pcacomponents150/checkpoints/chkpnt040000.pth
+  pca_dir: /is/cluster/mprinzler/projects/gintern/GEM/experiments/gem/${capture_id}/FINAL_pca_pcacomponents150/pca
+  disable_dynamic_mouth_opacities: True
+  disable_dynamic_mouth_scales: True
+  disable_dynamic_mouth_colors: True
+  neutral_frame_mean_init_iteration: 0
+  mean_init_iteration: 15_000
+  basis_init_iteration: 30_000
+  iterations: 60_000
+  optimizable_codes: false
+  orthogonalize_basis: false
+  optimizable_means: true
+  learning_rates:
+    pca_basis: 1.5e-7
+    pca_mean: 1.5e-5
+    RT: 1.5e-4
+    coeff_residuals: 1.5e-3
+    regressor: 1e-3
+    mean_init: 1.5e-4
+
+
+  run_dir: experiments/${.tag}/${capture_id}/${.exp_name}/
+  ckpt_dir: ${.run_dir}/checkpoints
+  canonical_mesh: ${.run_dir}/canonical.ply
+  tb_dir: ${.run_dir}/tb
+  progress_dir: ${.run_dir}/progress
+  results_dir: ${.run_dir}/results
+  dynamic_colors: True
+  use_gtempeh_predictions: True
+  pca_all: True
+  twoDgs: True
+  trainer: regressor
+  regressor_model: MLP
+  d_bottleneck_vae: 64
+  use_parts: false
+  # See gem/masks/flame for available masks
+  test_disable_regions: ["hair"]
+
+  loss_weights: 
+    w_static_mouth_color: 0.
+    w_reg_mean_init_neutral_frame: 1.
+    w_reg_mean_init: 0.
+    w_vgg: 0.03
+    w_kl: 0 # 1.0e-3
+    w_basis_reg: 0
+
+  use_pretrained_deca: true
+  use_data_augmentation: true
+  bg_color: "white"
+  uv_size: 512
+  batch_size: 30
+  shuffle: True
+  num_workers: 15
+  log_progress_n_steps: 500
+  log_n_steps: 50
+  checkpoint_n_steps: 5_000
+  eval_n_steps: 5_000
+  eval_n_samples: null
+  eval_n_vis: 5
+  make_videos: True
+
+  # Regressor settings
+  use_expr: false
+  use_deca_relative: false
+  use_emoca_relative: false
+  use_both_relative: true
+  use_absolute: false
+
+  optimizer:
+    class_name: torch.optim.AdamW
+
+  lr_scheduler:
+    class_name: torch.optim.lr_scheduler.MultiStepLR
+    milestones: [2_000, 4_000, 6_000]
+    gamma: 0.33
+
+# condor configs
+condor:
+  jobname: ${train.exp_name}_${capture_id}
+  submit:
+    executable: "condor/gem.sh"
+    arguments: "python ${script} __CONFIG__"
+    description: "GEM_${..jobname}"
+    request_gpus: 1
+    request_cpus: 16
+    request_memory: 128000
+    request_disk: "50G"
+    requirements: '(TARGET.CUDADeviceName=="NVIDIA A100-SXM4-40GB") || (TARGET.CUDADeviceName=="NVIDIA A100-SXM4-80GB")'
+    log_root: "${train.run_dir}/$(ClusterId).$(Process)"
+    error: "$(log_root).out"
+    output: "$(log_root).out"
+    log: "$(log_root).log"
+    environment: "\"CONDOR_ClusterId=$(ClusterId) CONDOR_Process=$(Process) CONDOR_WORLD_SIZE=${.njobs} CONDOR_LOGFILE=$(log) CONDOR_OUTFILE=$(out) NUMEXPR_MAX_THREADS=128\""
+    njobs: 1
+  code_backup_root: /is/cluster/mprinzler/.codebackups/GEM
+

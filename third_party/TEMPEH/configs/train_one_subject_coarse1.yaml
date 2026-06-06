@@ -1,0 +1,25 @@
+condor:
+  jobname: one_subj_tempeh_orig
+  submit:
+    executable: "condor/tempeh.sh"
+    arguments: "python trainer/train_global.py \
+                  --experiment-id ${..jobname} \
+                  --num-iterations 300000 \
+                  --train-data-list-fname /is/cluster/mprinzler/projects/gintern/TEMPEH/data/training_data/one_subj__all_seq_frames_per_seq_40_head_rot_120_train.json \
+                  --val-data-list-fname /is/cluster/mprinzler/projects/gintern/TEMPEH/data/training_data/one_subj__all_seq_frames_per_seq_5_val.json
+                "
+    description: "tempeh_${..jobname}"
+    request_gpus: 1
+    request_cpus: 16
+    request_memory: 64000
+    request_disk: "50G"
+    requirements: '(TARGET.CUDADeviceName=="NVIDIA A100-SXM4-40GB") || (TARGET.CUDADeviceName=="NVIDIA A100-SXM4-80GB")'
+    log_root: "logs/coarse/${..jobname}/$(ClusterId).$(Process)"
+    error: "$(log_root).out"
+    output: "$(log_root).out"
+    log: "$(log_root).log"
+    environment: "\"CONDOR_ClusterId=$(ClusterId) CONDOR_Process=$(Process) CONDOR_WorldSize=${.njobs} CONDOR_LOGFILE=$(log) CONDOR_OUTFILE=$(out) NUMEXPR_MAX_THREADS=128\""
+    njobs: 1
+
+#  code_backup:
+#    root: /is/cluster/mprinzler/.fastcomposer_codebackups

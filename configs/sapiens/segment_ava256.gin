@@ -1,0 +1,28 @@
+# condor/run.py configs/sapiens/segment_ava256.gin
+# condor/submit.py configs/sapiens/segment_ava256.gin 25
+
+INPUT = "/fast/mprinzler/gintern/datasets/ava-256"
+OUTPUT = "/fast/mprinzler/gintern/datasets/ava-256_sapiens_segmentations_debug/framestride_10"
+FRAME_STRIDE = 10
+SUBJECTS = "INQ807 KWL586"
+CAMERAS = "400939 400943"
+
+cmd/join_strings.strings = [
+  'source condor/activate_sapiens_environment.sh; scripts/sapiens/seg_ava256.sh',
+  ' "', %INPUT, '"',
+  ' "', %OUTPUT, '"',
+  ' ', %FRAME_STRIDE,
+  ' "', %SUBJECTS, '"',
+  ' "', %CAMERAS, '"'
+]
+
+CondorParameters:
+  njobs = 20
+  name = 'sapiens_segmentation'
+  batch_name = 'sapiens_segmentation'
+  base_dir = 'logs'
+  cmd = @cmd/join_strings()
+  request_cpus = 4
+  request_gpus = 1
+  backup_root = None
+  request_memory = 90_000

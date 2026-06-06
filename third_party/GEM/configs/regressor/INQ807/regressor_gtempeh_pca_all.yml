@@ -1,0 +1,106 @@
+# condor/run.py configs/regressor/INQ807/regressor_gtempeh_pca_all.yml
+# condor/submit.py 25 configs/regressor/INQ807/regressor_gtempeh_pca_all.yml
+
+script: train.py
+
+capture_id: 'UNION_INQ807'
+actor_id: /is/cluster/mprinzler/gtempeh/experiments/gtempeh/distillation_datasets/easyava256_tempehuv_uvres512/360k_framestride1/INQ807_tracked/${capture_id}
+dataset_name: NERSEMBLE
+regressor: DECA
+ds_rate: 1
+width: 512
+height: 512
+
+data:
+  image: ${actor_id}/images
+  mask: ${actor_id}/fg_masks
+  mesh: ${actor_id}/tracked_mesh
+  test_camera: "00"
+  identity_frame: "00000_00"
+  join_configs: true
+  camera_list: ["00", "03", "05", "06", "08"]
+  use_sampler: false
+
+data_cross_config: /home/mprinzler/projects/gintern/GEM/configs/regressor/V01/regressor_gtempeh_pca_all.yml
+
+### TRAIN CONFIG
+
+train:
+  tag: train_regressor
+  exp_name: gtempeh_wstaticmouthcolor1e4
+  pca_dir: /is/cluster/mprinzler/projects/gintern/GEM/experiments/gem/UNION_INQ807/gtempeh_hard_avgneckscalp/pca
+  mean_init_n_steps: 500
+  mean_init_w_reg: 1.
+  optimizable_codes: false
+  orthogonalize_basis: false
+  optimizable_means: true
+  lr_pca_basis: 5e-8
+  lr_pca_mean: 5e-5
+  run_dir: experiments/${.tag}/${capture_id}/${.exp_name}/
+  ckpt_dir: ${.run_dir}/checkpoints
+  canonical_mesh: ${.run_dir}/canonical.ply
+  tb_dir: ${.run_dir}/tb
+  progress_dir: ${.run_dir}/progress
+  results_dir: ${.run_dir}/results
+  dynamic_colors: True
+  use_gtempeh_predictions: True
+  pca_all: True
+  twoDgs: True
+  trainer: regressor
+  regressor_model: MLP
+  use_parts: false
+  # See gem/masks/flame for available masks
+  test_disable_regions: ["hair"]
+  w_static_mouth_color: 1.0e4
+
+  use_pretrained_deca: true
+  use_data_augmentation: true
+  bg_color: "white"
+  uv_size: 512
+  batch_size: 1
+  shuffle: true
+  num_workers: 8
+  log_progress_n_steps: 2500
+  log_n_steps: 50
+  checkpoint_n_steps: 10_000
+  eval_n_steps: 10_000
+  eval_n_samples: 20
+  eval_n_vis: 5
+  iterations: 200_000
+  warmup: 50_000
+
+  # Regressor settings
+  use_expr: false
+  use_deca_relative: false
+  use_emoca_relative: false
+  use_both_relative: true
+  use_absolute: false
+
+  optimizer:
+    class_name: torch.optim.AdamW
+
+  lr_scheduler:
+    class_name: torch.optim.lr_scheduler.MultiStepLR
+    milestones: [30_000, 60_000, 80_000]
+    gamma: 0.33
+
+# condor configs
+condor:
+  jobname: ${train.exp_name}
+  submit:
+    executable: "condor/gem.sh"
+    arguments: "python ${script} __CONFIG__"
+    description: "GEM_${..jobname}"
+    request_gpus: 1
+    request_cpus: 16
+    request_memory: 64000
+    request_disk: "50G"
+    requirements: '(TARGET.CUDADeviceName=="NVIDIA A100-SXM4-40GB") || (TARGET.CUDADeviceName=="NVIDIA A100-SXM4-80GB")'
+    log_root: "${train.run_dir}/$(ClusterId).$(Process)"
+    error: "$(log_root).out"
+    output: "$(log_root).out"
+    log: "$(log_root).log"
+    environment: "\"CONDOR_ClusterId=$(ClusterId) CONDOR_Process=$(Process) CONDOR_WORLD_SIZE=${.njobs} CONDOR_LOGFILE=$(log) CONDOR_OUTFILE=$(out) NUMEXPR_MAX_THREADS=128\""
+    njobs: 1
+  code_backup_root: /is/cluster/mprinzler/.codebackups/GEM
+

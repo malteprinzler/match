@@ -1,0 +1,89 @@
+# condor/run.py configs/distillation/INQ807_TEETHFOCUS/gtempeh_pca_all_fitflame.yml
+# condor/submit.py 25 configs/distillation/INQ807_TEETHFOCUS/gtempeh_pca_all_fitflame.yml
+
+script: fit_flame_to_dataset.py
+
+capture_id: 'UNION_INQ807_TEETHFOCUS'
+actor_id: /is/cluster/mprinzler/gtempeh/experiments/gtempeh/distillation_datasets/easyava256_tempehuv_uvres512/360k_framestride1/INQ807_tracked/${capture_id}
+gtempeh_path: /is/cluster/mprinzler/gtempeh/experiments/gtempeh/distillation_datasets/easyava256_tempehuv_uvres512/360k_framestride1/INQ807
+dataset_name: NERSEMBLE
+ds_rate: 1
+
+data:
+  image: ${actor_id}/images
+  mask: ${actor_id}/fg_masks
+  mesh: ${actor_id}/tracked_mesh
+  test_camera: "00"
+  identity_frame: "00000_00"
+
+### TRAIN CONFIG
+
+train:
+  tag: flame_fits
+  exp_name: flame_fit_unpose_all
+  run_dir: experiments/${.tag}/${capture_id}/${.exp_name}/
+  ckpt_dir: ${.run_dir}/checkpoints
+  pca_dir: ${.run_dir}/pca
+  pca_average_parts: ['neck', 'neck_high', 'scalp']
+  canonical_mesh: ${.run_dir}/canonical.ply
+  tb_dir: ${.run_dir}/tb
+  progress_dir: ${.run_dir}/progress
+  results_dir: ${.run_dir}/results
+  dynamic_colors: True
+  use_gtempeh_predictions: True
+  gtempeh_path: ${gtempeh_path}
+  pca_all: True
+  twoDgs: True
+  uv_size: 512
+  batch_size: 1
+  num_workers: 8
+  log_progress_n_steps: 3_000 
+  log_n_steps: 50
+  checkpoint_n_steps: 30_000
+  iterations: 1_000_000
+  bg_color: "white"
+  use_feature_map: true
+  use_parts: false
+
+  use_bg_net: false
+  use_color_calib: false
+  use_pixel_bias: false
+
+  # Network
+  use_def_grad_map: false
+  use_pca_layer: true
+  pca_n_components: 16
+  use_sh: false
+  use_shadow: false
+  use_uv_sampling: false
+  unet_scale: 1
+  unet_multiplayer: 2
+  fix_rgb: true
+
+  optimizer:
+    class_name: torch.optim.Adam
+
+  lr_scheduler:
+    class_name: torch.optim.lr_scheduler.MultiStepLR
+    milestones: [350_000, 700_000]
+    gamma: 0.33
+
+# condor configs
+condor:
+  jobname: ${train.exp_name}
+  submit:
+    executable: "condor/gem.sh"
+    arguments: "python ${script} __CONFIG__"
+    description: "GEM_${..jobname}"
+    request_gpus: 1
+    request_cpus: 16
+    request_memory: 64000
+    request_disk: "50G"
+    requirements: '(TARGET.CUDADeviceName=="NVIDIA A100-SXM4-40GB") || (TARGET.CUDADeviceName=="NVIDIA A100-SXM4-80GB")'
+    log_root: "${train.run_dir}/$(ClusterId).$(Process)"
+    error: "$(log_root).out"
+    output: "$(log_root).out"
+    log: "$(log_root).log"
+    environment: "\"CONDOR_ClusterId=$(ClusterId) CONDOR_Process=$(Process) CONDOR_WORLD_SIZE=${.njobs} CONDOR_LOGFILE=$(log) CONDOR_OUTFILE=$(out) NUMEXPR_MAX_THREADS=128\""
+    njobs: 1
+  code_backup_root: /is/cluster/mprinzler/.codebackups/GEM

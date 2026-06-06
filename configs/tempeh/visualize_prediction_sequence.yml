@@ -1,0 +1,47 @@
+# condor/run.py configs/tempeh/visualize_prediction_sequence.yml
+
+
+name: visualize_tempeh_prediction_sequence-${subject}
+subject: APP152
+prediction_dir: /is/cluster/mprinzler/projects/gintern/match/data/tempeh_predictions/ava-256/GEM_quickstart_fixed/ava-256
+out_path: ${prediction_dir}/${subject}/video.mp4
+script: scripts/tempeh/visualize_prediction_sequence.py
+visualize_prediction_sequence_config:
+    dataset_cls: ava256
+    dataset_kwargs: 
+        root_path: /fast/mprinzler/gintern/datasets/ava-256
+        height: 393
+        width: 256
+        camera_angles: [[0,0], [0, -15], [20,0], [20, 36], [20, -15], [-20,0], [-20, 36], [-20, -15], [40,-5], [40, 25], [-40,-5], [-40, 25]]
+        uv_directory: ${prediction_dir}
+        coarse_mesh_directory: ${prediction_dir}
+        frame_stride: 1
+        max_captures: null
+        head_crop: False
+        require_verts: False
+        require_segmentation: False
+        training: null
+        only_subjects: ['${subject}']
+    
+    kwargs:
+        output_path: ${out_path}
+        contrast: 1.5
+        fps: 24
+        nframes: 200
+
+# condor configs
+CondorParameters:
+  name: ${name}
+  batch_name: ${name}
+  cmd: 'source condor/activate_environment.sh; python ${script} --config __CONFIG__'
+  requirements: '(TARGET.CUDACapability >= 8.0)'
+  base_dir: null
+  request_gpus: 1
+  request_cpus: 16
+  request_memory: 64_000
+  request_disk: 50G
+  backup_root: null
+  backup_excludepatterns: ['third_party']
+  environment: {'CC': 'gcc-11', 'CXX':'g++-11'}
+  njobs: 20
+  retries: 0

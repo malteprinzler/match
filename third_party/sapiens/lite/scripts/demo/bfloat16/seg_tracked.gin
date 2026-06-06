@@ -1,0 +1,13 @@
+# condor/run.py seg_tracked.gin
+# condor/submit.py seg_tracked.gin 25
+
+
+CondorParameters:
+  njobs = 10
+  name = 'sapiens_segmentation'
+  batch_name = 'sapiens_segmentation'
+  base_dir = '/home/mprinzler/projects/gintern/gtempeh/experiments/file_operations'
+  cmd = 'source /home/mprinzler/miniconda3/etc/profile.d/conda.sh; conda activate sapiens_lite; ./seg_tracked.sh'
+  request_gpus = 1
+  backup_root = None
+  request_memory = 90_000

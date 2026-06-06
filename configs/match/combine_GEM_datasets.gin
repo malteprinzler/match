@@ -1,0 +1,36 @@
+# condor/run.py configs/match/combine_GEM_datasets.gin
+# condor/submit.py configs/match/combine_GEM_datasets.gin 25
+
+condor_name/join_strings.strings = ['.combine_GEM_datasets']
+cmd/join_strings.strings = ['python scripts/match/combine_GEM_datasets.py --gin_configs __CONFIG__']
+
+BASE_PATH = 'experiments/match/GEM_datasets'
+
+combine_GEM_datasets:
+  base_path = %BASE_PATH
+  subjects = [
+    'APP152',
+    # 'INQ807',
+    'PGO261',
+    # 'TCE049',
+    # 'UHV563'
+    ]
+  val_cam_idx = 0
+  division_mode = 'explicit'
+  skip = ['GAZ', 'EXP_shoulder', 'EXP_tongue', 'EXP_head']
+  src_folders_test = ['EXP_free_face']
+
+CondorParameters:
+  njobs = 1
+  name = @condor_name/join_strings()
+  batch_name = @condor_name/join_strings()
+  cmd = @cmd/join_strings()
+  requirements = '(TARGET.CUDACapability >= 7.0)'
+  base_dir = %BASE_PATH
+  request_gpus = 0
+  request_cpus = 1
+  request_memory = 10_000
+  backup_root = '/home/mprinzler/.codebackups/gtempeh'
+  backup_excludepatterns = ['third_party']
+  environment = {'CC': 'gcc-11', 'CXX':'g++-11'}
+  retries = 5

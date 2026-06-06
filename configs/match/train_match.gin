@@ -1,0 +1,217 @@
+# condor/submit.py configs/match/train_match.gin 35
+# condor/run.py configs/match/train_match.gin
+NAME = "match_officialcoarsetempehuv"
+BASE_FOLDER = "/home/mprinzler/projects/gintern/match/experiments/clean"
+
+AVA_HEIGHT = 786
+AVA_WIDTH = 512
+AVA_HEAD_CROP = True
+AVA_HEAD_CROP_HEIGHT = 640
+AVA_HEAD_CROP_WIDTH = 512
+HEAD_CROP_OFFSET_Y = -64
+INPUT_RES = %AVA_HEAD_CROP_HEIGHT
+OUTPUT_RES = %INPUT_RES
+IMG_PATCH_SIZE = 8
+AVA_ROOT = '/fast/mprinzler/gintern/datasets/ava-256'
+AVA_FRAME_STRIDE = 10
+AVA_UV_DIR = '/fast/mprinzler/gintern/datasets/ava-256_uvpredictions/TEMPEH_ORIGINAL/coarse__tempeh_ava256_scale08_wedgeface10__September01__14-23-23_uvmaps_full'
+AVA_COARSE_MESH_DIR = '/fast/mprinzler/gintern/datasets/ava-256_uvpredictions/TEMPEH_ORIGINAL/coarse__tempeh_ava256_scale08_wedgeface10__September01__14-23-23_uvmaps_full'
+AVA_USE_GT_UV = False
+AVA_SAPIENS_SEG_DIR = '/fast/mprinzler/gintern/datasets/ava-256_sapiens_segmentations/framestride_10/sapiens_1b'
+AVA_CAMERA_ANGLES = [[0,0], [0, -15],
+                  [20,0], [20, 36], [20, -15],
+                  [-20,0], [-20, 36], [-20, -15],
+                  [40,-5], [40, 25],
+                  [-40,-5], [-40, 25],
+                  ]
+AVA_SAPIENS_DIR = None
+AVA_MAX_CAPTURES = None
+BATCH_SIZE = 1
+NUM_WORKERS = 16
+N_GPUS = 4
+N_CPUS = 64
+MEMORY = 500000
+
+# calculating derrived values
+base_folder/join_strings.strings = [%BASE_FOLDER, '/', %NAME]
+cmd/join_strings.strings = ['source /home/mprinzler/miniconda3/etc/profile.d/conda.sh; conda activate gtempeh; CC=gcc-11 CXX=g++-11 CPLUS_INCLUDE_PATH=/home/mprinzler/miniconda3/envs/gtempeh/include:$CPLUS_INCLUDE_PATH PYTHONPATH=$(pwd) PATH=/is/software/nvidia/cuda-12.9/bin:$PATH PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True torchrun --standalone --nnodes=1 --nproc-per-node=', %N_GPUS, ' scripts/match/train_match.py --gin_configs __CONFIG__; condor/backup_out.py; condor/exit.py']
+
+Options:
+    # Experiment
+    base_folder = @base_folder/join_strings()
+    # load_pretrained_model = "/is/cluster/mprinzler/gtempeh/experiments/gtempeh/easyava256_gtuv/easyava256_gtuv_geoonly_uvres512_lr4e-5_4gpus_bs1"
+    # load_pretrained_model_ckpt = 100_000
+    load_pretrained_model_strict = False
+    n_vissamples = 5
+    max_val_steps = 5
+    geom_only_steps = 100_000
+    lpips_warmup_start = 150_000
+    lpips_warmup_end = 200_000
+    max_train_steps = 1_000_000
+    eval_freq = 20_000
+    early_eval_freq = 20_000
+    log_freq = 10
+    save_freq = 20_000
+    restart_after_eval_frequency = 5
+
+    # Model
+    use_sapiens_features = True
+    sapiens_prediction_tiles_sqrt = 2
+    skip_connection = True
+    num_blocks = 6
+    n_neighbors = 100
+    uv_res = 1024
+    uv_patch_size=16
+    input_res = %INPUT_RES
+    output_res = %OUTPUT_RES
+    template_mesh_vertex_groups_path = '/home/mprinzler/projects/gintern/gtempeh/assets/ava256/vertex_groups_with_neck_and_scalp.json'
+
+    # DATASET
+    train_loader_params = {
+        'cls': 'ava256',
+        'kwargs': {
+        'dataloader_kwargs': {
+            'batch_size': %BATCH_SIZE,
+            'num_workers': %NUM_WORKERS,
+            'persistent_workers': True,
+            'in_order': False,
+            'prefetch_factor': 4,
+        },
+        'dataset_kwargs': {
+            "root_path": %AVA_ROOT,
+            'height': %AVA_HEIGHT,
+            'width': %AVA_WIDTH,
+            "camera_angles":  %AVA_CAMERA_ANGLES, 
+            'uv_directory': %AVA_UV_DIR,
+            'coarse_mesh_directory': %AVA_COARSE_MESH_DIR,
+            'frame_stride': %AVA_FRAME_STRIDE,
+            'max_captures': %AVA_MAX_CAPTURES,
+            'head_crop': %AVA_HEAD_CROP,
+            'head_crop_height': %AVA_HEAD_CROP_HEIGHT,
+            'head_crop_width': %AVA_HEAD_CROP_WIDTH,
+            'head_crop_offset_y': %HEAD_CROP_OFFSET_Y,
+            'sapiens_segmentation_directory': %AVA_SAPIENS_SEG_DIR, 
+        }
+        }
+    }
+    val_loader_params = [
+        {
+        'name': 'ava_train',
+        'cls': 'ava256',
+        'kwargs': {
+            'dataloader_kwargs': {
+            "batch_size": %BATCH_SIZE,
+            'num_workers': 2,
+            }, 
+            'dataset_kwargs': {
+            "root_path": %AVA_ROOT,
+            'height': %AVA_HEIGHT,
+            'width': %AVA_WIDTH,
+            "camera_angles":  %AVA_CAMERA_ANGLES,
+            'uv_directory': %AVA_UV_DIR,
+            'coarse_mesh_directory': %AVA_COARSE_MESH_DIR,
+            'frame_stride': %AVA_FRAME_STRIDE,
+            'max_captures': %AVA_MAX_CAPTURES,
+            'head_crop': %AVA_HEAD_CROP,
+            'head_crop_height': %AVA_HEAD_CROP_HEIGHT,
+            'head_crop_width': %AVA_HEAD_CROP_WIDTH,
+            'head_crop_offset_y': %HEAD_CROP_OFFSET_Y,
+            'sapiens_segmentation_directory': %AVA_SAPIENS_SEG_DIR, 
+            'deterministic_shuffle': True,
+            'training': True,
+            }
+        }
+        },
+        {
+        'name': 'ava_val',
+        'cls': 'ava256',
+        'kwargs': {
+            'dataloader_kwargs': {
+            "batch_size": %BATCH_SIZE,
+            'num_workers': 2,
+            }, 
+            'dataset_kwargs': {
+            "root_path": %AVA_ROOT,
+            'height': %AVA_HEIGHT,
+            'width': %AVA_WIDTH,
+            "camera_angles":  %AVA_CAMERA_ANGLES,
+            'uv_directory': %AVA_UV_DIR,
+            'coarse_mesh_directory': %AVA_COARSE_MESH_DIR,
+            'frame_stride': %AVA_FRAME_STRIDE,
+            'max_captures': %AVA_MAX_CAPTURES,
+            'head_crop': %AVA_HEAD_CROP,
+            'head_crop_height': %AVA_HEAD_CROP_HEIGHT,
+            'head_crop_width': %AVA_HEAD_CROP_WIDTH,
+            'head_crop_offset_y': %HEAD_CROP_OFFSET_Y,
+            'sapiens_segmentation_directory': %AVA_SAPIENS_SEG_DIR, 
+            'deterministic_shuffle': True,
+            'training': False,
+            }
+        }
+        }
+    ]
+    segmentation_labels_path = '/home/mprinzler/projects/gintern/gtempeh/assets/sapiens/segmentation_labels.json'
+
+    # Training
+    optimizer = {        
+            "name": "adamw",
+            "lr": 4e-5,  # @mprinzler changed from 0.0004,
+            "betas": [0.9, 0.95],
+            "weight_decay": 0.05,
+    }
+    grad_checkpoint = True
+    find_unused_parameters = True
+    num_input_views = 12
+    num_views = 12
+    num_render_views = 12
+    input_bg = 'white'
+    output_bg = 'random'
+    
+    # Losses
+    lpips_weight = 1.0  
+    render_weight = 0.0
+    l1_weight = 0.8
+    ssim_weight = 0.2
+    mesh_vert_weight = 1e-3
+    xyz_weight = 1e-3
+    scale_weight = 1e-3
+    scale_target = 0.0005
+    noloss_masks = [
+        "Left_Foot",
+        "Left_Hand",
+        "Left_Lower_Arm",
+        "Left_Lower_Leg",
+        "Left_Shoe",
+        "Left_Sock",
+        "Left_Upper_Arm",
+        "Left_Upper_Leg",
+        "Lower_Clothing",
+        "Right_Foot",
+        "Right_Hand",
+        "Right_Lower_Arm",
+        "Right_Lower_Leg",
+        "Right_Shoe",
+        "Right_Sock",
+        "Right_Upper_Arm",
+        "Right_Upper_Leg",
+        "Torso",
+        "Upper_Clothing",
+        ]
+    noloss_mask_dilation = 2
+    noloss_mask_threshold = 0.5
+    noloss_mask_strength = 1.0
+
+CondorParameters:
+  name = %NAME
+  batch_name = %NAME
+  base_dir = %BASE_FOLDER
+  request_gpus = %N_GPUS
+  request_cpus = %N_CPUS
+  request_memory = %MEMORY
+  cmd = @cmd/join_strings()
+  backup_root = '/home/mprinzler/.codebackups/gtempeh'
+  backup_excludepatterns = ['third_party']
+  environment = {'CC': 'gcc-11', 'CXX':'g++-11'}
+  # requirements = '(TARGET.CUDAGlobalMemoryMb >=40000) && (UtsnameNodename =!= "i101") && (UtsnameNodename =!= "i102") && (UtsnameNodename =!= "g164")'
+  requirements = '(TARGET.CUDACapability >= 9.0) && (UtsnameNodename =!= "i206")'
+  retries = 5

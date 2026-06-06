@@ -1,0 +1,20 @@
+condor:
+  jobname: one_subj_tempeh_orig_coarse2
+  submit:
+    executable: "configs/train_one_subject_coarse2.sh"
+    arguments: ""
+    description: "tempeh_${..jobname}"
+    request_gpus: 1
+    request_cpus: 16
+    request_memory: 64000
+    request_disk: "50G"
+    requirements: '(TARGET.CUDADeviceName=="NVIDIA A100-SXM4-40GB") || (TARGET.CUDADeviceName=="NVIDIA A100-SXM4-80GB")'
+    log_root: "logs/coarse/${..jobname}/$(ClusterId).$(Process)"
+    error: "$(log_root).out"
+    output: "$(log_root).out"
+    log: "$(log_root).log"
+    environment: "\"CONDOR_ClusterId=$(ClusterId) CONDOR_Process=$(Process) CONDOR_WorldSize=${.njobs} CONDOR_LOGFILE=$(log) CONDOR_OUTFILE=$(out) NUMEXPR_MAX_THREADS=128\""
+    njobs: 1
+
+#  code_backup:
+#    root: /is/cluster/mprinzler/.fastcomposer_codebackups

@@ -1,0 +1,85 @@
+# condor/run.py configs/GEM/fit_flame_APP152.yml
+# condor/submit.py 25 configs/GEM/fit_flame_APP152.yml
+
+script: scripts/GEM/fit_flame_to_predictions.py
+
+subject: APP152
+capture_id: 'UNION_GEM_${subject}'
+data_dir: experiments/match/GEM_datasets/${subject}/${capture_id}
+dataset_name: NERSEMBLE
+ds_rate: 1
+
+data:
+  image: ${data_dir}/images
+  mask: ${data_dir}/fg_masks
+  mesh: ${data_dir}/tracked_mesh
+  test_camera: "00"
+  identity_frame: "00000_00"
+
+### TRAIN CONFIG
+
+train:
+  tag: flame_fits
+  exp_name: FINAL_flame_fits
+  run_dir: experiments/GEM/${.tag}/${.exp_name}/${capture_id}
+  ckpt_dir: ${.run_dir}/checkpoints
+  pca_dir: ${.run_dir}/pca
+  pca_average_parts: ['neck', 'neck_high', 'scalp']
+  canonical_mesh: ${.run_dir}/canonical.ply
+  tb_dir: ${.run_dir}/tb
+  progress_dir: ${.run_dir}/progress
+  results_dir: ${.run_dir}/results
+  dynamic_colors: True
+  use_gtempeh_predictions: True
+  pca_all: True
+  twoDgs: True
+  uv_size: 512
+  batch_size: 1
+  num_workers: 8
+  log_progress_n_steps: 3_000 
+  log_n_steps: 50
+  checkpoint_n_steps: 30_000
+  iterations: 1_000_000
+  bg_color: "white"
+  use_feature_map: true
+  use_parts: false
+
+  use_bg_net: false
+  use_color_calib: false
+  use_pixel_bias: false
+
+  # Network
+  use_def_grad_map: false
+  use_pca_layer: true
+  pca_n_components: 16
+  use_sh: false
+  use_shadow: false
+  use_uv_sampling: false
+  unet_scale: 1
+  unet_multiplayer: 2
+  fix_rgb: true
+
+  optimizer:
+    class_name: torch.optim.Adam
+
+  lr_scheduler:
+    class_name: torch.optim.lr_scheduler.MultiStepLR
+    milestones: [350_000, 700_000]
+    gamma: 0.33
+
+# condor configs
+CondorParameters:
+  njobs: 1
+  name: ${train.exp_name}_${capture_id}
+  batch_name: ${train.exp_name}_${capture_id}
+  cmd: 'python ${script} __CONFIG__'
+  requirements: '(TARGET.CUDACapability >= 7.0)'
+  base_dir: ${train.run_dir}
+  request_gpus: 0
+  request_cpus: 1
+  request_memory: 10_000
+  request_disk: 50G
+  backup_root: '/home/mprinzler/.codebackups/GEM'
+  backup_excludepatterns: ['third_party']
+  environment: {'CC': 'gcc-11', 'CXX':'g++-11'}
+  retries: 0

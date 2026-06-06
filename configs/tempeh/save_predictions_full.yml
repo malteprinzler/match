@@ -1,0 +1,39 @@
+# condor/run.py configs/tempeh/save_predictions_full.yml
+# condor/submit.py configs/tempeh/save_predictions_full.yml 25
+
+
+name: save_TEMPEH_closedgap_predictions-eval
+out_dir: /fast/mprinzler/gintern/datasets/mixed_uvpredictions/MATCH_TEMPEH_closedgap
+script: scripts/tempeh/save_predictions.py
+tempeh_config: /is/cluster/mprinzler/projects/gintern/match/experiments/tempeh/closedgap/coarse__tempeh_closedgap__March05__15-12-04_1M/config.json
+arguments: "--config-filename ${tempeh_config} \
+            --dataset-directory /fast/mprinzler/gintern/datasets/ava-256 \
+            --camera-angles '[[0,0], [0, -15], [20,0], [20, 36], [20, -15], [-20,0], [-20, 36], [-20, -15], [40,-5], [40, 25], [-40,-5], [-40, 25]]' \
+            --height 256 \
+            --width 167 \
+            --frame-stride 10 \
+            --nersemble-dataset-directory /fast/mprinzler/gintern/datasets/nersemble_tracked_extracted \
+            --nersemble-camera-angles '[[-49,15], [-28, 15], [-16, 13], [5, 14], [27, 15], [48, 16],[-48,-15], [-16, -16], [-6, -16], [5, -17], [26, -15], [47, -16],]' \
+            --nersemble-height 256 \
+            --nersemble-width 176 \
+            --nersemble-frame-stride 4 \           
+            --outpath ${out_dir} \
+            --uv-out-height 786 \
+            --uv-out-width 512"
+
+# condor configs
+CondorParameters:
+  name: ${name}
+  batch_name: ${name}
+  cmd: 'python ${script} ${arguments}'
+  requirements: '(TARGET.CUDACapability >= 8.0)'
+  base_dir: ${out_dir}
+  request_gpus: 1
+  request_cpus: 16
+  request_memory: 64_000
+  request_disk: 50G
+  backup_root: null
+  backup_excludepatterns: ['third_party']
+  environment: {'CC': 'gcc-11', 'CXX':'g++-11'}
+  njobs: 20
+  retries: 0
