@@ -5,14 +5,13 @@ Official repository for the paper
 
 <a href="https://malteprinzler.github.io/" target="_blank">Malte Prinzler</a><sup>1,2</sup>, <a href="https://www.paulogotardo.com/" target="_blank">Paulo Gotardo</a><sup>2</sup>, <a href="https://vlg.inf.ethz.ch/team/Prof-Dr-Siyu-Tang.html/" target="_blank">Siyu Tang</a><sup>1</sup>, <a href="https://sites.google.com/site/bolkartt/" target="_blank">Timo Bolkart</a><sup>2</sup>
 
-<sup>1</sup>ETH Zürich, <sup>2</sup>Google
+<sup>1</sup>ETH Zürich, <sup>2</sup>  
 Work partially done while Malte was an intern at Google.
 
 <a href='http://arxiv.org/abs/2603.15811'><img src='https://img.shields.io/badge/arXiv-2603.15811-red'></a> <a href='https://malteprinzler.github.io/projects/match/'><img src='https://img.shields.io/badge/project page-MATCH-Green'></a> <a href='#citation'><img src='https://img.shields.io/badge/cite-blue'></a>
 
-<video id="teaser" autoplay="" muted="" playsinline="" controls="" style="width:100%; height:auto;" src="https://malteprinzler.github.io/projects/match/static/videos/teaser_hq_fixed_sat1.3.mp4">
+<video id="teaser" autoplay="" muted="" playsinline="" controls="" style="width:100%; max-width:1024px; height:auto;" src="media/teaser.mp4">
 </video>
-
 
 TL;DR:  Given calibrated multi-view images, MATCH infers static Gaussian splat textures in 0.5 seconds. The resulting Gaussians are in dense semantic correspondence across subjects and expressions. This allows for various applications such as editing, expression transfer, and fast avatar optimization. 
 
