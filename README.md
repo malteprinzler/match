@@ -10,7 +10,8 @@ Work partially done while Malte was an intern at Google.
 
 <a href='http://arxiv.org/abs/2603.15811'><img src='https://img.shields.io/badge/arXiv-2603.15811-red'></a> <a href='https://malteprinzler.github.io/projects/match/'><img src='https://img.shields.io/badge/project page-MATCH-Green'></a> <a href='#citation'><img src='https://img.shields.io/badge/cite-blue'></a>
 
-https://github.com/user-attachments/assets/a95b154e-5a41-4315-802c-5b2a3d2555ac
+https://github.com/user-attachments/assets/d6d400f4-7d3d-4a86-ad94-2306bb2842a8
+
 
 TL;DR:  Given calibrated multi-view images, MATCH infers static Gaussian splat textures in 0.5 seconds. The resulting Gaussians are in dense semantic correspondence across subjects and expressions. This allows for various applications such as editing, expression transfer, and fast avatar optimization. 
 
